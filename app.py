@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, current_app
 from payment_processing import processing_map
 import db
+import os
 
 app = Flask(__name__)
 app.config.from_pyfile("config.py")
@@ -23,4 +24,4 @@ def process_payment():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=current_app.config['PORT'])
+    app.run(host='0.0.0.0', port=os.environ['PORT'])

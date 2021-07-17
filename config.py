@@ -9,5 +9,3 @@ DBUSER = os.environ['DBUSER']
 DBPASS = os.environ['DBPASS']
 DBPORT = os.environ['DBPORT']
 DBHOST = os.environ['DBHOST']
-
-PORT = os.environ['PORT']
