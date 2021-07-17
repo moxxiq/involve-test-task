@@ -75,24 +75,6 @@ def usd(params):
     if not response.get("body"):
         return "Error receiving response"
     body = json.loads(response.get("body"))
-    # for testing purposes only
-    body = \
-        {'data':
-            {'created': 'Wed, 06 Dec 2017 14:30:44 GMT',
-             'id': 25,
-             'lifetime': 43200,
-             'payer_account': None,
-             'payer_currency': 643,
-             'payer_price': 23.15,
-             'shop_amount': 23.15,
-             'shop_currency': 643,
-             'shop_id': 3,
-             'shop_order_id': 4239,
-             'shop_refund': 23.15,
-             'url': 'https://wallet.piastrix.com/ru/bill/pay/WtvoXPzcphd'},
-         'error_code': 0,
-         'message': 'Ok',
-         'result': True}
     if not body.get("data"):
         return body.get("message")
     return redirect(body["data"]["url"])
