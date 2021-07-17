@@ -4,15 +4,17 @@
 
 {% block content %}
     <section>
-        <h2>Confirm payment</h2>
+        <h2>Confirm the payment #{{ shop_order_id }}</h2>
+        <p>{{ amount/100 }}€</p>
+        <p> Description: {{ description }} </p>
         <form name="Pay" method="post" action="https://pay.piastrix.com/en/pay" accept-charset="UTF-8">
-            <input type="hidden" name="amount" value="10.00"/>
-            <input type="hidden" name="currency" value="643"/>
-            <input type="hidden" name="shop_id" value="1"/>
-            <input type="hidden" name="sign" value="2a966c9942652c115640f584b101f4124a8c44e9f119b449195beacf539e98b9"/>
-            <input type="hidden" name="shop_order_id" value="101"/>
+            <input type="hidden" name="amount" value="{{ amount/100 }}"/>
+            <input type="hidden" name="currency" value="{{ currency }}"/>
+            <input type="hidden" name="shop_id" value="{{ shop_id }}"/>
+            <input type="hidden" name="sign" value="{{ sha256hash }}"/>
+            <input type="hidden" name="shop_order_id" value="{{ shop_order_id }}"/>
             <input type="submit"/>
-            <input type="hidden" name="description" value="Test invoice"/>
+            <input type="hidden" name="description" value="{{ description }}"/>
         </form>
     </section>
 {% endblock %}

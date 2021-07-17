@@ -1,8 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for
 from payment_processing import processing_map
+import db
 
 app = Flask(__name__)
 app.config.from_pyfile("config.py")
+app.teardown_appcontext(db.close_db)
+app.cli.add_command(db.init_db_command)
 
 
 @app.route('/')
