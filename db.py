@@ -1,4 +1,5 @@
-import sqlite3
+# import sqlite3
+import psycopg2
 
 import click
 from flask import current_app, g
@@ -7,12 +8,18 @@ from flask.cli import with_appcontext
 
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect(
-            current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
+        g.db = psycopg2.connect(
+            dbname=current_app.config['DBNAME'],
+            user=current_app.config['DBUSER'],
+            password=current_app.config['DBPASS'],
+            host=current_app.config['DBHOST'],
+            port=current_app.config['DBPORT'],
         )
-        g.db.row_factory = sqlite3.Row
-
+    #     g.db = sqlite3.connect(
+    #         current_app.config['DATABASE'],
+    #         detect_types=sqlite3.PARSE_DECLTYPES
+    #     )
+    #     g.db.row_factory = sqlite3.Row
     return g.db
 
 
@@ -25,8 +32,12 @@ def close_db(e=None):
 
 def init_db():
     db = get_db()
-    with current_app.open_resource('schema-sqlite.sql') as f:
-        db.executescript(f.read().decode('utf8'))
+    cur = db.cursor()
+    with current_app.open_resource('schema-postgresql.sql') as f:
+        cur.execute(f.read().decode('utf8'))
+        cur.execute("commit")
+    cur.close()
+
 
 
 @click.command('init-db')
@@ -36,32 +47,34 @@ def init_db_command():
     click.echo('Initialized the database.')
 
 
-def new_record(conn: sqlite3.Connection, currency: str, amount: float,
+def new_record(conn, currency: str, amount: float,
                description: str = None) -> int:
     """
     Add a new record of the most recent payment, set time of payment
     initialisation
     """
     sql = """ INSERT INTO payments(currency, amount, description)
-              VALUES(?,?,?)
+              VALUES(%s, %s, %s)
               RETURNING id
     """
     cur = conn.cursor()
     cur.execute(sql, [currency, amount, description])
     # Retrieve id from returning query
-    record = cur.fetchone()
+    record = tuple(cur.fetchone())
     # Commit changes
     cur.execute("commit")
-    return record['id']
+    cur.close()
+    return record[0]
 
 
-def update_record(conn: sqlite3.Connection, record_id: int, hash: str):
+def update_record(conn, record_id: int, hash: str):
     """
     Update payment time to make it closer to the payment broker's time,
     add hash
     """
     cur = conn.cursor()
     cur.execute(
-        "UPDATE payments SET created=CURRENT_TIMESTAMP, hash=? WHERE id=?",
+        "UPDATE payments SET created=CURRENT_TIMESTAMP, hash=%s WHERE id=%s",
         [hash, record_id])
     cur.execute("commit")
+    cur.close()
