@@ -104,6 +104,7 @@ def rub(params):
     if not response.get("body"):
         return "Error receiving response"
     body = json.loads(response.get("body"))
+    # merge context to show user confirmation with necessary data
     data = body["data"] | context
     return render_template('rub.html', **data)
 
