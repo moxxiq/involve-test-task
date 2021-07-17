@@ -1,6 +1,8 @@
 click==8.0.1
+faster-than-requests==21.3.3
 Flask==2.0.1
 itsdangerous==2.0.1
 Jinja2==3.0.1
 MarkupSafe==2.0.1
+nimporter==1.0.4
 Werkzeug==2.0.1

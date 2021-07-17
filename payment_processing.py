@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request
+from flask import render_template, redirect
 from collections import OrderedDict
 from hashlib import sha256
 from db import get_db, new_record, update_record
 from config import shop_id, SECRET_KEY
+import faster_than_requests as requests
+import json
 
 
 def gen_sha256(required: dict) -> str:
@@ -13,14 +15,24 @@ def gen_sha256(required: dict) -> str:
     return sha256(str_to_hash.encode('utf-8')).hexdigest()
 
 
+def make_db_record(params: dict) -> int:
+    """ Connect to DB and get order_id """
+    connection = get_db()
+    return new_record(connection,
+                      params.get("currency"),
+                      params.get("amount"),
+                      params.get("description"), )
+
+
+def update_time_hash(record_id: int, sha256hash: str):
+    """ Update record with closer time and the hash """
+    connection = get_db()
+    update_record(connection, record_id, sha256hash)
+
+
 def eur(params):
     """Process payment on EUR currency"""
-    # connect to DB and get order_id
-    connection = get_db()
-    record_id = new_record(connection,
-                           params.get("currency"),
-                           params.get("amount"),
-                           params.get("description"),)
+    record_id = make_db_record(params)
     # required arguments to form an sha256 hash
     required = dict(
         amount=int(float(params.get("amount")) * 100),
@@ -28,21 +40,62 @@ def eur(params):
         shop_id=shop_id,
         shop_order_id=record_id,
     )
-    required_hash = gen_sha256(required)
     # the rest of the arguments including the hash
     additional = dict(
-        sha256hash=required_hash,
+        sign=gen_sha256(required),
         description=params.get("description"),
     )
     # merge two dict to one to pass to the page form
     context = required | additional
-    # update record with closer time and the hash
-    update_record(connection, record_id, additional["sha256hash"])
+    update_time_hash(record_id, additional["sign"])
     return render_template('eur.html', **context)
 
 
 def usd(params):
-    pass
+    """Process payment on EUR currency"""
+    record_id = make_db_record(params)
+    required = dict(
+        shop_amount=int(float(params.get("amount")) * 100),
+        shop_currency=840,
+        shop_id=shop_id,
+        shop_order_id=record_id,
+        payer_currency=980
+    )
+    additional = dict(
+        sign=gen_sha256(required),
+        description=params.get("description"),
+    )
+    context = required | additional
+    update_time_hash(record_id, additional["sign"])
+    response = requests.to_dict(requests.post(
+        "https://core.piastrix.com/bill/create",
+        body=json.dumps(context),
+        http_headers=[("Content-type", "application/json")],
+    ))
+    if not response.get("body"):
+        return "Error receiving response"
+    body = json.loads(response.get("body"))
+    # for testing purposes only
+    body = \
+        {'data':
+            {'created': 'Wed, 06 Dec 2017 14:30:44 GMT',
+             'id': 25,
+             'lifetime': 43200,
+             'payer_account': None,
+             'payer_currency': 643,
+             'payer_price': 23.15,
+             'shop_amount': 23.15,
+             'shop_currency': 643,
+             'shop_id': 3,
+             'shop_order_id': 4239,
+             'shop_refund': 23.15,
+             'url': 'https://wallet.piastrix.com/ru/bill/pay/WtvoXPzcphd'},
+         'error_code': 0,
+         'message': 'Ok',
+         'result': True}
+    if not body.get("data"):
+        return body.get("message")
+    return redirect(body["data"]["url"])
 
 
 def rub(params):
