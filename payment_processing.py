@@ -3,7 +3,7 @@ from collections import OrderedDict
 from hashlib import sha256
 from db import get_db, new_record, update_record
 from config import shop_id, SECRET_KEY, payway
-import faster_than_requests as requests
+import requests
 import json
 
 
@@ -67,17 +67,14 @@ def usd(params):
     )
     context = required | additional
     update_time_hash(record_id, additional["sign"])
-    response = requests.to_dict(requests.post(
+    response = requests.post(
         "https://core.piastrix.com/bill/create",
-        body=json.dumps(context),
-        http_headers=[("Content-type", "application/json")],
-    ))
-    if not response.get("body"):
-        return "Error receiving response"
-    body = json.loads(response.get("body"))
-    if not body.get("data"):
-        return body.get("message")
-    return redirect(body["data"]["url"])
+        data=json.dumps(context),
+        headers={"Content-type": "application/json"},
+    ).json()
+    if not response.get("data"):
+        return response.get("message")
+    return redirect(response["data"]["url"])
 
 
 def rub(params):
@@ -96,16 +93,15 @@ def rub(params):
     )
     context = required | additional
     update_time_hash(record_id, additional["sign"])
-    response = requests.to_dict(requests.post(
+    response = requests.post(
         "https://core.piastrix.com/invoice/create",
-        body=json.dumps(context),
-        http_headers=[("Content-type", "application/json")],
-    ))
-    if not response.get("body"):
-        return "Error receiving response"
-    body = json.loads(response.get("body"))
+        data=json.dumps(context),
+        headers={"Content-type": "application/json"},
+    ).json()
+    if not response.get("data"):
+        return response.get("message")
     # merge context to show user confirmation with necessary data
-    data = body["data"] | context
+    data = response["data"] | context
     return render_template('rub.html', **data)
 
 
