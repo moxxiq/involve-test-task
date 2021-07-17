@@ -5,26 +5,33 @@ from db import get_db, new_record, update_record
 from config import shop_id, SECRET_KEY
 
 
+def gen_sha256(required: dict) -> str:
+    """Generate sha256 hash of any [unsorted] dictionary"""
+    required = OrderedDict(sorted(required.items()))
+    # prepare a string for hashing
+    str_to_hash = ":".join(str(v) for v in required.values()) + SECRET_KEY
+    return sha256(str_to_hash.encode('utf-8')).hexdigest()
+
+
 def eur(params):
     """Process payment on EUR currency"""
-    # TODO: connect to DB and get order_id
+    # connect to DB and get order_id
     connection = get_db()
     record_id = new_record(connection,
                            params.get("currency"),
                            params.get("amount"),
                            params.get("description"),)
     # required arguments to form an sha256 hash
-    required = OrderedDict(sorted(dict(
+    required = dict(
         amount=int(float(params.get("amount")) * 100),
         currency=978,
         shop_id=shop_id,
         shop_order_id=record_id,
-    ).items()))
-    # prepare a string for hashing
-    str_to_hash = ":".join(str(v) for v in required.values()) + SECRET_KEY
+    )
+    required_hash = gen_sha256(required)
     # the rest of the arguments including the hash
     additional = dict(
-        sha256hash=sha256(str_to_hash.encode('utf-8')).hexdigest(),
+        sha256hash=required_hash,
         description=params.get("description"),
     )
     # merge two dict to one to pass to the page form
