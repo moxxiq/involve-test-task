@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, current_app
 from payment_processing import processing_map
 import db
 
@@ -23,4 +23,4 @@ def process_payment():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=current_app.config['PORT'])
