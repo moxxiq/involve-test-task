@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}RUB payment{% endblock %}
+
+{% block content %}
+    <section>
+        <h2>Confirm the payment #{{ shop_order_id }}</h2>
+        <p>{{ amount }}₽</p>
+        <p> Description: {{ description }} </p>
+        <form name="Pay" method="{{ method }}" action="{{ url }}" accept-charset="UTF-8">
+            {% for k, v in data.items() %}
+                <input type="hidden" name="{{ k }}" value="{{ v }}"/>
+            {% endfor %}
+            <input type="submit"/>
+        </form>
+    </section>
+{% endblock %}

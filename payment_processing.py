@@ -2,7 +2,7 @@ from flask import render_template, redirect
 from collections import OrderedDict
 from hashlib import sha256
 from db import get_db, new_record, update_record
-from config import shop_id, SECRET_KEY
+from config import shop_id, SECRET_KEY, payway
 import faster_than_requests as requests
 import json
 
@@ -20,7 +20,7 @@ def make_db_record(params: dict) -> int:
     connection = get_db()
     return new_record(connection,
                       params.get("currency"),
-                      params.get("amount"),
+                      int(float(params.get("amount")) * 100),
                       params.get("description"), )
 
 
@@ -35,7 +35,7 @@ def eur(params):
     record_id = make_db_record(params)
     # required arguments to form an sha256 hash
     required = dict(
-        amount=int(float(params.get("amount")) * 100),
+        amount=float(params.get("amount")),
         currency=978,
         shop_id=shop_id,
         shop_order_id=record_id,
@@ -55,7 +55,7 @@ def usd(params):
     """Process payment on EUR currency"""
     record_id = make_db_record(params)
     required = dict(
-        shop_amount=int(float(params.get("amount")) * 100),
+        shop_amount=float(params.get("amount")),
         shop_currency=840,
         shop_id=shop_id,
         shop_order_id=record_id,
@@ -81,7 +81,31 @@ def usd(params):
 
 
 def rub(params):
-    pass
+    """Process payment on RUB currency"""
+    record_id = make_db_record(params)
+    required = dict(
+        amount=float(params.get("amount")),
+        currency=643,
+        shop_id=shop_id,
+        shop_order_id=record_id,
+        payway=payway,
+    )
+    additional = dict(
+        sign=gen_sha256(required),
+        description=params.get("description"),
+    )
+    context = required | additional
+    update_time_hash(record_id, additional["sign"])
+    response = requests.to_dict(requests.post(
+        "https://core.piastrix.com/invoice/create",
+        body=json.dumps(context),
+        http_headers=[("Content-type", "application/json")],
+    ))
+    if not response.get("body"):
+        return "Error receiving response"
+    body = json.loads(response.get("body"))
+    data = body["data"] | context
+    return render_template('rub.html', **data)
 
 
 processing_map = {

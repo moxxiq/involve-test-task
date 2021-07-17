@@ -5,10 +5,10 @@
 {% block content %}
     <section>
         <h2>Confirm the payment #{{ shop_order_id }}</h2>
-        <p>{{ amount/100 }}€</p>
+        <p>{{ amount }}€</p>
         <p> Description: {{ description }} </p>
         <form name="Pay" method="post" action="https://pay.piastrix.com/en/pay" accept-charset="UTF-8">
-            <input type="hidden" name="amount" value="{{ amount/100 }}"/>
+            <input type="hidden" name="amount" value="{{ amount }}"/>
             <input type="hidden" name="currency" value="{{ currency }}"/>
             <input type="hidden" name="shop_id" value="{{ shop_id }}"/>
             <input type="hidden" name="sign" value="{{ sha256hash }}"/>
